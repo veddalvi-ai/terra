@@ -10,22 +10,9 @@ interface RegionSummary {
   tier: 'A' | 'B';
 }
 
-interface Transaction {
-  id: string;
-  source: string;
-  sale_date: string;
-  price: string;
-  currency: string;
-  address: string | null;
-  property_type: string | null;
-  floor_area_sqm: string | null;
-  listing_type: 'sale' | 'rent';
-}
-
 interface RegionDetail {
   region: { id: string; name: string; level: string; country_code: string; currency: string };
   summaries: RegionSummary[];
-  transactions: { sale: Transaction[]; rent: Transaction[] };
 }
 
 const TIER_LABEL: Record<string, string> = { A: 'High confidence', B: 'Medium confidence' };
@@ -56,7 +43,7 @@ export default function AreaCard({ regionId, onClose }: { regionId: string; onCl
     );
   }
 
-  const { region, summaries, transactions } = data;
+  const { region, summaries } = data;
   const latestByType = (type: 'sale' | 'rent') => summaries.find((s) => s.listing_type === type);
   const latestSale = latestByType('sale');
   const latestRent = latestByType('rent');
@@ -103,26 +90,6 @@ export default function AreaCard({ regionId, onClose }: { regionId: string; onCl
       ) : (
         <p>No data.</p>
       )}
-
-      {(() => {
-        const list = transactions[tab];
-        if (list.length === 0) return null;
-        return (
-          <>
-            <h3 style={{ fontSize: 13, margin: '16px 0 8px', color: '#444' }}>Recent transactions</h3>
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: 240, overflowY: 'auto' }}>
-              {list.map((t) => (
-                <li key={t.id} style={{ fontSize: 12, padding: '6px 0', borderBottom: '1px solid #eee' }}>
-                  <div>{t.address || '(address withheld by source)'}</div>
-                  <div style={{ color: '#666' }}>
-                    {t.sale_date} · {formatPrice(t.price, t.currency)} · {t.property_type} · source: {t.source}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
-        );
-      })()}
     </div>
   );
 }

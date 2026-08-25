@@ -7,6 +7,7 @@ import AreaCard from './AreaCard';
 import CountryPanel from './CountryPanel';
 import SearchBar from './SearchBar';
 import { formatCompactPrice } from '@/lib/formatPrice';
+import { flyEase } from '@/lib/flyEase';
 
 const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -92,7 +93,7 @@ export default function Globe() {
         if (!props) return;
         if (props.tier === 'has-data') {
           setSelectedCountry(null);
-          map.flyTo({ center: e.lngLat, zoom: 5 });
+          map.flyTo({ center: e.lngLat, zoom: 5, easing: flyEase });
         } else {
           setSelectedRegionId(null);
           setSelectedCountry(props);
@@ -198,7 +199,7 @@ export default function Globe() {
         const zoom = await source.getClusterExpansionZoom(clusterId);
         const geometry = feature!.geometry;
         if (geometry.type !== 'Point') return;
-        map.easeTo({ center: geometry.coordinates as [number, number], zoom });
+        map.easeTo({ center: geometry.coordinates as [number, number], zoom, easing: flyEase });
       });
       map.on('mouseenter', 'clusters-layer', () => (map.getCanvas().style.cursor = 'pointer'));
       map.on('mouseleave', 'clusters-layer', () => (map.getCanvas().style.cursor = ''));
@@ -230,7 +231,11 @@ export default function Globe() {
       <div ref={containerRef} style={{ width: '100vw', height: '100dvh' }} />
       <SearchBar
         onSelect={(result) => {
-          mapRef.current?.flyTo({ center: [result.lng, result.lat], zoom: result.level === 'area' ? 12 : 10 });
+          mapRef.current?.flyTo({
+            center: [result.lng, result.lat],
+            zoom: result.level === 'area' ? 12 : 10,
+            easing: flyEase,
+          });
           if (result.level === 'city' || result.level === 'area') {
             setSelectedCountry(null);
             setSelectedRegionId(result.id);

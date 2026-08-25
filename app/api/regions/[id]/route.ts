@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { currencyForCountry } from '@/lib/currency';
 
-// Area card + transaction-detail data for one region (spec §3.3, §3.4).
+// Area card data for one region (spec §3.3) — the aggregate price, not a
+// transaction ledger. transaction_count + period still satisfy guardrail 1
+// ("never show a number without source count + date") without listing every
+// individual sale.
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -21,23 +24,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     [id]
   );
 
-  // Guardrail 1: never show a price without the transaction record it came from.
-  // Sale and rent are fetched separately, each with its own LIMIT — a region can
-  // have hundreds of same-day sale rows that would otherwise crowd every rent
-  // row out of a single shared LIMIT 20.
-  const recentTransactions = (listingType: 'sale' | 'rent') =>
-    pool.query(
-      `select id, source, sale_date::text as sale_date, price, currency, address, property_type, floor_area_sqm, listing_type
-       from transaction
-       where region_id = $1 and listing_type = $2
-       order by sale_date desc limit 20`,
-      [id, listingType]
-    );
-  const [saleTx, rentTx] = await Promise.all([recentTransactions('sale'), recentTransactions('rent')]);
-
   return NextResponse.json({
     region: { ...region.rows[0], currency: currencyForCountry(region.rows[0].country_code) },
     summaries: summaries.rows,
-    transactions: { sale: saleTx.rows, rent: rentTx.rows },
   });
 }
